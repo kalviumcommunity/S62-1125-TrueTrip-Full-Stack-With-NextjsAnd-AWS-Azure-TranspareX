@@ -1,0 +1,5 @@
+﻿#!/usr/bin/env sh
+. \"\/_/husky.sh\"
+
+npx lint-staged
+npx tsc --noEmit
