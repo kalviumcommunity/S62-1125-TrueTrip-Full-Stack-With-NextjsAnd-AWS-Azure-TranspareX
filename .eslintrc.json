@@ -1,0 +1,24 @@
+{
+  "extends": [
+    "next/core-web-vitals",
+    "@typescript-eslint/recommended",
+    "plugin:prettier/recommended"
+  ],
+  "plugins": ["@typescript-eslint", "prettier"],
+  "rules": {
+    "no-console": "warn",
+    "semi": ["error", "always"],
+    "quotes": ["error", "double"],
+    "@typescript-eslint/no-unused-vars": "error",
+    "@typescript-eslint/no-explicit-any": "warn",
+    "@typescript-eslint/explicit-function-return-type": "off",
+    "@typescript-eslint/explicit-module-boundary-types": "off",
+    "prettier/prettier": "error"
+  },
+  "overrides": [
+    {
+      "files": ["*.ts", "*.tsx"],
+      "parser": "@typescript-eslint/parser"
+    }
+  ]
+}
