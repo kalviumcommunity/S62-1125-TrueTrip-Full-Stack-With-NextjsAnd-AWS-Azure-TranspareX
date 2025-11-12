@@ -4,5 +4,9 @@ out/
 dist/
 build/
 *.min.js
+
 *.min.css
 webpack/
+
+*.min.css
+
