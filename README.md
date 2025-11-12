@@ -118,3 +118,42 @@ PostgreSQL documentation on table constraints and indexes.
 Guides on database normalization and best practices.
 
 !(Img/PostgreSQL.png)
+
+Centralized Error Handling in Next.js
+Overview:
+This project demonstrates the implementation of a centralized error handling middleware in a Next.js application. The goal is to catch, categorize, and log all application errors in a consistent manner, while ensuring secure and minimal user-facing responses in production.
+
+Centralized error handling is crucial because modern web applications can fail in many ways, such as API timeouts, database issues, or unexpected exceptions. Without a centralized approach, errors become scattered, logs are inconsistent, and debugging becomes challenging.
+
+Key Features:
+Consistency: Every error follows a uniform response format.
+Security: Sensitive stack traces are hidden in production.
+Observability: Structured logs make debugging and monitoring easier.
+Environment-specific behavior: Detailed errors and stack traces in development; safe minimal messages in production.
+
+Project Structure:
+The project structure for managing and logging errors is organized as follows:
+    app/api/ - API route handlers.
+    lib/logger.ts - Custom structured logging utility.
+    lib/errorHandler.ts - Centralized error handling function.
+
+Logger Utility:
+The logger utility provides structured logging, capturing:
+    Log level (info, error)
+    Message
+    Metadata (e.g., stack trace)
+    Timestamp
+
+Centralized Error Handler:
+The centralized error handler classifies errors and formats responses based on the environment:
+    Development: Returns full error messages and stack traces.
+    Production: Logs detailed errors internally, but only sends a safe, minimal message to the user.\
+
+Benefits:
+Improved Debugging: Structured logs make it easier to identify the root cause of issues.
+User Trust: Redacting sensitive data ensures that users are not exposed to internal system details.
+Reusability: A single error handler can manage all errors across the application, reducing repetition.
+Scalability: Easy to extend for custom error types such as ValidationError or AuthError.
+
+Reflection:
+Implementing a centralized error handler improves both development workflow and user experience. Developers gain detailed insights for debugging while users receive safe, understandable error messages. Structured logging also supports monitoring tools and cloud platforms for observability.
