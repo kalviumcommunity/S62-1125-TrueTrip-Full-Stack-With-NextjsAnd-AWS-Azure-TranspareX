@@ -1,8 +1,24 @@
 version: '3.8'
+
 services:
+  app:
+    build: .
+    container_name: nextjs_app
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgres://postgres:password@postgres:5432/kalvium_db
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - localnet
+
   postgres:
     image: postgres:13
     container_name: kalvium_postgres
+    restart: always
     environment:
       POSTGRES_DB: kalvium_db
       POSTGRES_USER: postgres
@@ -11,6 +27,20 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - localnet
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis_cache
+    ports:
+      - "6379:6379"
+    networks:
+      - localnet
+
+networks:
+  localnet:
+    driver: bridge
 
 volumes:
   postgres_data:
