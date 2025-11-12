@@ -4,9 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:env": "env-cmd -f .env.local next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint .",
+    "start:staging": "cross-env NODE_ENV=staging next start",
+    "lint": "eslint . --ext .ts,.tsx,.js,.jsx --max-warnings 0",
     "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
     "format": "prettier --write .",
     "type-check": "tsc --noEmit",
@@ -18,23 +20,29 @@
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.3",
+    "@types/react-dom": "^19.2.2",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
+    "cross-env": "^10.1.0",
+    "dotenv": "^17.2.3",
+    "env-cmd": "^11.0.0",
     "eslint": "^8.57.1",
-    "eslint-config-next": "^14.2.33",
+    "eslint-config-next": "^13.5.11",
     "eslint-config-prettier": "^9.1.2",
     "eslint-plugin-prettier": "^5.5.4",
     "husky": "^8.0.3",
-    "lint-staged": "^15.2.2",
-    "prettier": "^3.6.2",
-    "typescript": "^5.3.3"
+    "lint-staged": "^15.5.2",
+    "prettier": "^3.0.0",
+    "typescript": "^5.9.3"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [
       "eslint --fix",
       "prettier --write"
     ],
-    "*.{json,md,mdx,css,html,yml,yaml}": [
+    "*.{json,md,mdx,css,scss,yaml,yml}": [
       "prettier --write"
     ]
   }

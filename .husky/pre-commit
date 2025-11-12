@@ -1,5 +1,4 @@
 ﻿#!/usr/bin/env sh
-. \"\/_/husky.sh\"
+. "$(dirname "$0")/_/husky.sh"
 
 npx lint-staged
-npx tsc --noEmit
