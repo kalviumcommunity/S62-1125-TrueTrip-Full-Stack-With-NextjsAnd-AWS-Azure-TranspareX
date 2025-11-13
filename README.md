@@ -199,3 +199,24 @@ Flexible filtering and pagination ready for large datasets
 
 Reflection:
 This implementation creates a robust foundation that balances developer experience with production reliability. The consistent approach reduces cognitive load for both API consumers and maintainers, while the error handling strategy provides security and good user experience.
+
+
+Docker Setup Summary
+
+This project uses Docker to containerize the Next.js frontend, PostgreSQL database, and Redis cache. The Dockerfile builds and runs the Next.js app — it installs dependencies, builds the project, and serves it on port 3000. The docker-compose.yml file manages multiple services together, linking them through a shared network and using volumes for persistent data.
+
+During setup, I faced issues like missing package.json paths, Docker daemon not running, and version warnings in docker-compose.yml. These were fixed by correcting file paths, starting Docker Desktop, and removing deprecated fields.
+
+After resolving these, all containers built successfully, and the app ran smoothly inside Docker. This setup ensures consistent builds, easier debugging, and a fully portable development environment.
+
+!(Docker1.png)
+
+Form Handling Summary
+
+This project implements form handling in the Next.js frontend to capture and manage user input effectively. The form collects essential data, validates inputs, and submits the information either to a local API route or directly to the backend. Validation ensures that users cannot submit incomplete or invalid entries.
+
+During implementation, I faced issues like missing input state updates, form submission not triggering due to incorrect event handling, and errors in connecting the frontend form to the backend route. These were fixed by using React’s useState hooks for controlled inputs, adding proper onSubmit handlers, and verifying API endpoints.
+
+After resolving these, the form successfully validated and submitted data, updating the database as expected. This setup ensures reliable data collection, smoother user experience, and easier backend integration.
+
+
