@@ -1,35 +1,82 @@
-import { NextResponse } from "next/server";
-import { handleError, ValidationError, DatabaseError } from "@/lib/errorHandler";
+import { NextRequest } from 'next/server';
+import { ApiResponse } from '@/lib/api-response';
 
-export async function GET() {
+// Mock data
+let users = [
+  { id: 1, name: 'Alice', email: 'alice@example.com' },
+  { id: 2, name: 'Bob', email: 'bob@example.com' },
+];
+
+export async function GET(request: NextRequest) {
   try {
-    // Simulate different scenarios based on query params
-    throw new Error("Database connection failed!");
+    const { searchParams } = new URL(request.url);
+    const page = Number(searchParams.get('page')) || 1;
+    const limit = Number(searchParams.get('limit')) || 10;
+    const search = searchParams.get('search') || '';
+
+    // Filter users based on search
+    let filteredUsers = users;
+    if (search) {
+      filteredUsers = users.filter(user => 
+        user.name.toLowerCase().includes(search.toLowerCase()) ||
+        user.email.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    // Implement pagination
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+
+    return ApiResponse.success(
+      'Users retrieved successfully',
+      {
+        users: paginatedUsers,
+        pagination: {
+          page,
+          limit,
+          total: filteredUsers.length,
+          totalPages: Math.ceil(filteredUsers.length / limit)
+        }
+      }
+    );
   } catch (error) {
-    return handleError(error, "GET /api/users");
+    console.error('Error fetching users:', error);
+    return ApiResponse.error('Internal server error', 500);
   }
 }
 
-// Enhanced version with multiple error types
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const errorType = searchParams.get('error');
+    const body = await request.json();
     
-    if (errorType === 'validation') {
-      throw new ValidationError("Invalid user data: email is required");
+    // Validation
+    if (!body.name || !body.email) {
+      return ApiResponse.badRequest('Name and email are required');
     }
-    
-    if (errorType === 'database') {
-      throw new DatabaseError("Failed to connect to database");
+
+    // Check if user already exists
+    const existingUser = users.find(user => user.email === body.email);
+    if (existingUser) {
+      return ApiResponse.badRequest('User with this email already exists');
     }
-    
-    // Success case
-    return NextResponse.json({ 
-      success: true, 
-      message: "User created successfully" 
-    });
+
+    // Create new user
+    const newUser = {
+      id: users.length + 1,
+      name: body.name,
+      email: body.email,
+    };
+
+    users.push(newUser);
+
+    return ApiResponse.success(
+      'User created successfully',
+      newUser,
+      201
+    );
   } catch (error) {
-    return handleError(error, "POST /api/users");
+    console.error('Error creating user:', error);
+    return ApiResponse.error('Internal server error', 500);
   }
 }
