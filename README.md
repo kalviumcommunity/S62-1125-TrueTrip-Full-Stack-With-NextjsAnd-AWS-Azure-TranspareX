@@ -76,6 +76,74 @@ Providing .env.example with safe placeholder values for teammates to replicate t
 
 !(Img/env.png)
 
+Centralized Error Handling Middleware
+Overview:
+Modern applications can fail due to database downtime, invalid requests, API timeouts, or unexpected exceptions. Without a central system, errors become scattered, logs become inconsistent, and debugging becomes harder.
+
+A centralized error handler solves these problems by ensuring:
+    Uniform error response structure
+    Secure handling of sensitive information
+    Better observability through structured logs
+    Reusable and maintainable error-handling logic
+
+Why Centralized Error Handling Is Important
+
+Consistency
+Every error follows the same response format, making frontend integration predictable.
+
+Security
+Internal error details and stack traces are hidden in production to protect sensitive information.
+
+Observability
+Structured logging makes debugging faster and supports better monitoring.
+
+Maintainability
+All error-handling logic lives in one place, reducing repetition across the application.
+
+Structure:
+The system is organized into a simple structure:
+
+app/api/          → API route handlers  
+lib/logger.ts     → Logging utility  
+lib/errorHandler.ts → Centralized error-handling logic
+
+Each route relies on the handler instead of manually handling errors.
+
+How It Works
+In Development
+    Full error message is shown
+    Stack trace is included
+    Helps with fast debugging   
+
+In Production
+    User receives a safe, generic message
+    Stack trace is hidden
+    Error details are logged internally for developers
+This two-mode behavior balances safety and debugging efficiency.
+
+Logger Functionality:
+A structured logger captures:
+    Error message
+    Log level
+    Metadata (context, stack trace)
+    Timestamp
+This improves visibility into what happened, where, and why.
+
+Usage in API Routes:
+API routes wrap logic in a try–catch block.
+When an error occurs, they call the centralized handler instead of having separate error logic in each route.
+This keeps APIs clean, consistent, and easy to maintain.
+
+Benefits:
+Professional and secure error responses
+Predictable and uniform API behaviour
+Clean and reusable error-handling logic
+Better debugging through detailed logs
+Minimal exposure of sensitive details in production
+
+Reflection
+
+Centralized error handling makes the entire system more reliable and developer-friendly. Developers get detailed internal logs, while users see safe and clear messages. The design scales well, supports future custom error types, and ensures that every part of the app fails gracefully instead of unpredictably.
 
 PostgreSQL Schema Design for Project Management App
 
@@ -199,3 +267,33 @@ Flexible filtering and pagination ready for large datasets
 
 Reflection:
 This implementation creates a robust foundation that balances developer experience with production reliability. The consistent approach reduces cognitive load for both API consumers and maintainers, while the error handling strategy provides security and good user experience.
+
+
+Authentication API Documentation
+Overview
+Secure user authentication system implementing bcrypt password hashing and JWT token management for session handling. Provides robust signup and login functionality with proper input validation and security measures.
+
+API Endpoints
+User Registration
+The signup endpoint creates new user accounts with secure password storage. All user inputs are validated using Zod schemas to ensure data integrity. The system checks for existing users with duplicate emails or usernames before account creation. Passwords are hashed using bcrypt with 12 salt rounds before storage, ensuring they are never saved in plain text. Upon successful registration, the system generates both access and refresh tokens for immediate authentication.
+
+User Login
+The login endpoint authenticates users by verifying credentials against stored records. It validates email format and password presence before database lookup. The system compares the provided password with the hashed version using secure bcrypt comparison. Successful authentication results in new JWT tokens being generated and returned to the client along with user profile information.
+
+Security Implementation
+Password Security
+Passwords are protected using industry-standard bcrypt hashing with 12 salt rounds. This ensures even if the database is compromised, passwords remain secure. The system enforces strong password policies requiring minimum 8 characters with uppercase, lowercase, and numeric characters.
+
+Token Management
+JWT tokens provide stateless authentication with access tokens valid for 15 minutes and refresh tokens lasting 7 days. This balance ensures security through short-lived access tokens while maintaining user convenience with longer-lived refresh tokens. All tokens are signed using secure secrets stored in environment variables.
+
+Input Validation
+Comprehensive validation using Zod schemas ensures all incoming data meets required formats and constraints. Email addresses are strictly validated, usernames require minimum length checks, and passwords must meet security standards. This prevents malformed data from reaching the database layer.
+
+Authorization Middleware
+Protected routes utilize authentication middleware that verifies JWT tokens before granting access. The middleware extracts tokens from authorization headers, validates their signature and expiration, and provides user context to protected endpoints. Failed authentication returns appropriate HTTP status codes.
+
+Error Handling
+The system provides clear error responses for various scenarios including validation failures, authentication errors, duplicate user conflicts, and server issues. All errors follow consistent response formats making them easily handled by client applications.
+
+!(Img/authentication.png)
