@@ -1,98 +1,54 @@
-// app/api/auth/login/route.ts
-import { NextResponse } from "next/server";
-import bcrypt from "bcrypt";
-import { prisma } from "@/lib/prisma";
-import { loginSchema } from "@/lib/validations/auth";
-import { generateAccessToken, generateRefreshToken } from "@/lib/utils/jwt";
+import { NextRequest } from 'next/server';
+import bcrypt from 'bcryptjs';
+import { AuthValidations } from '@/lib/utils/validations/auth';
+import { ApiResponseHandler } from '@/lib/utils/validations/api-response';
+import { JWTUtils } from '@/lib/utils/jwt';
+import { db, toSafeUser } from '@/lib/utils/prisma';
+import { Logger } from '@/lib/utils/logger';
+import { withErrorHandler, AuthenticationError } from '@/lib/utils/errorHandler';
 
-export async function POST(req: Request) {
-  try {
-    const body = await req.json();
-    
-    // Validate input using Zod
-    const validationResult = loginSchema.safeParse(body);
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          message: "Validation failed", 
-          errors: validationResult.error.errors 
-        },
-        { status: 400 }
-      );
-    }
+export const POST = withErrorHandler(async (req: NextRequest) => {
+  const body = await req.json();
 
-    const { email, password } = validationResult.data;
+  // Validate input
+  const validatedData = AuthValidations.validateLogin(body);
 
-    // Find user by email
-    const user = await prisma.tripUser.findUnique({ 
-      where: { email } 
-    });
-    
-    if (!user) {
-      return NextResponse.json(
-        { success: false, message: "Invalid email or password" },
-        { status: 401 }
-      );
-    }
+  // Find user with password
+  const user = await db.user.findByEmail(validatedData.email);
 
-    // Verify password
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      return NextResponse.json(
-        { success: false, message: "Invalid email or password" },
-        { status: 401 }
-      );
-    }
-
-    // Generate tokens
-    const tokenPayload = { 
-      id: user.id, 
-      email: user.email, 
-      username: user.username,
-      role: user.role 
-    };
-    const accessToken = generateAccessToken(tokenPayload);
-    const refreshToken = generateRefreshToken(tokenPayload);
-
-    const response = NextResponse.json({
-      success: true,
-      message: "Login successful",
-      user: {
-        id: user.id,
-        email: user.email,
-        username: user.username,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role
-      },
-      accessToken,
-      refreshToken,
-      expiresIn: "15 minutes"
-    });
-
-    // Set HTTP-only cookies
-    response.cookies.set('accessToken', accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 15 * 60
-    });
-
-    response.cookies.set('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60
-    });
-
-    return response;
-
-  } catch (error: any) {
-    console.error("Login error:", error);
-    return NextResponse.json(
-      { success: false, message: "Internal server error", error: error.message },
-      { status: 500 }
-    );
+  if (!user) {
+    throw new AuthenticationError('Invalid email or password');
   }
-}
+
+  // Verify password
+  const isPasswordValid = await bcrypt.compare(
+    validatedData.password,
+    user.password
+  );
+
+  if (!isPasswordValid) {
+    throw new AuthenticationError('Invalid email or password');
+  }
+
+  // Generate token (convert userId to string for JWT)
+  const token = JWTUtils.generateToken({
+    userId: user.id.toString(), // Convert number to string for JWT
+    email: user.email,
+    username: user.username,
+    role: user.role,
+  });
+
+  // Update last login
+  await db.user.updateLastLogin(user.id);
+
+  // Log the login
+  Logger.audit('user_login', user.id.toString(), { email: user.email });
+
+  // Convert to safe user without password
+  const safeUser = toSafeUser(user);
+
+  return ApiResponseHandler.success('Login successful', {
+    user: safeUser,
+    token,
+  });
+});
