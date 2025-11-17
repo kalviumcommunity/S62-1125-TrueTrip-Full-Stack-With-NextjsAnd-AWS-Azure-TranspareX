@@ -1,6 +1,6 @@
 // app/api/admin/users/route.ts
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/utils/prisma";
 import { authenticateToken, requireRole } from "@/middleware/auth";
 
 export async function GET(req: Request) {

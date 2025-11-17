@@ -1,115 +1,62 @@
 // app/api/auth/signup/route.ts
-import { NextResponse } from "next/server";
-import bcrypt from "bcrypt";
-import { prisma } from "@/lib/prisma";
-import { signupSchema } from "@/lib/validations/auth";
-import { generateAccessToken, generateRefreshToken } from "@/lib/utils/jwt";
+import { NextRequest } from 'next/server';
+import bcrypt from 'bcryptjs';
+import { AuthValidations } from '@/lib/utils/validations/auth';
+import { ApiResponseHandler } from '@/lib/utils/validations/api-response';
+import { JWTUtils } from '@/lib/utils/jwt';
+import { db, toSafeUser } from '@/lib/utils/prisma';
+import { Logger } from '@/lib/utils/logger';
+import { withErrorHandler, ConflictError } from '@/lib/utils/errorHandler';
 
-export async function POST(req: Request) {
-  try {
-    const body = await req.json();
-    
-    // Validate input using Zod
-    const validationResult = signupSchema.safeParse(body);
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          message: "Validation failed", 
-          errors: validationResult.error.errors 
-        },
-        { status: 400 }
-      );
-    }
+export const POST = withErrorHandler(async (req: NextRequest) => {
+  const body = await req.json();
+  console.log('Signup request received:', body);
+  
+  // Validate input
+  const validatedData = AuthValidations.validateSignup(body);
+  const sanitizedData = AuthValidations.sanitizeUserInput(validatedData);
 
-    const { email, username, password, firstName, lastName, role } = validationResult.data;
-
-    // Check if user already exists with email or username
-    const existingUser = await prisma.tripUser.findFirst({
-      where: {
-        OR: [
-          { email },
-          { username }
-        ]
-      }
-    });
-    
-    if (existingUser) {
-      const field = existingUser.email === email ? "email" : "username";
-      return NextResponse.json(
-        { 
-          success: false, 
-          message: `User already exists with this ${field}` 
-        },
-        { status: 409 }
-      );
-    }
-
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 12);
-
-    // Create user in TripUser table
-    const user = await prisma.tripUser.create({
-      data: { 
-        email,
-        username,
-        password: hashedPassword,
-        firstName,
-        lastName,
-        role
-      },
-      select: {
-        id: true,
-        email: true,
-        username: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        createdAt: true
-      }
-    });
-
-    // Generate tokens
-    const tokenPayload = { 
-      id: user.id, 
-      email: user.email, 
-      username: user.username,
-      role: user.role 
-    };
-    const accessToken = generateAccessToken(tokenPayload);
-    const refreshToken = generateRefreshToken(tokenPayload);
-
-    const response = NextResponse.json({
-      success: true,
-      message: "User registered successfully",
-      user,
-      accessToken,
-      refreshToken,
-      expiresIn: "15 minutes"
-    });
-
-    // Set HTTP-only cookies for additional security
-    response.cookies.set('accessToken', accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 15 * 60 // 15 minutes
-    });
-
-    response.cookies.set('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 // 7 days
-    });
-
-    return response;
-
-  } catch (error: any) {
-    console.error("Signup error:", error);
-    return NextResponse.json(
-      { success: false, message: "Internal server error", error: error.message },
-      { status: 500 }
-    );
+  // Check if user already exists by email
+  const existingUserByEmail = await db.user.findByEmail(sanitizedData.email);
+  if (existingUserByEmail) {
+    throw new ConflictError('User with this email already exists');
   }
-}
+
+  // Check if user already exists by username
+  const existingUserByUsername = await db.user.findByUsername(sanitizedData.username);
+  if (existingUserByUsername) {
+    throw new ConflictError('User with this username already exists');
+  }
+
+  // Hash password
+  const hashedPassword = await bcrypt.hash(sanitizedData.password, 12);
+
+  // Create user using TripUser model
+  const user = await db.user.create({
+    firstName: sanitizedData.firstName,
+    lastName: sanitizedData.lastName,
+    username: sanitizedData.username,
+    email: sanitizedData.email,
+    password: hashedPassword,
+    role: 'USER',
+  });
+
+  // Generate token
+  const token = JWTUtils.generateToken({
+    userId: user.id.toString(),
+    email: user.email,
+    username: user.username,
+    role: user.role,
+  });
+
+  // Log the signup
+  Logger.audit('user_signup', user.id.toString(), { email: user.email });
+
+  // Convert to safe user without password
+  const safeUser = toSafeUser(user);
+
+  return ApiResponseHandler.created('User created successfully', {
+    user: safeUser,
+    token,
+  });
+});
