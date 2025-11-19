@@ -1,87 +1,67 @@
-import { NextRequest } from 'next/server';
-import { ApiResponse } from '@/lib/api-response';
+// app/api/users/[id]/route.ts
+import { 
+  sendSuccess, 
+  sendNotFound, 
+  sendBadRequest,
+  sendInternalError 
+} from "@/lib/responseHandler";
 
 let users = [
-  { id: 1, name: 'Alice', email: 'alice@example.com' },
-  { id: 2, name: 'Bob', email: 'bob@example.com' },
+  { id: 1, name: "Alice", email: "alice@example.com" },
+  { id: 2, name: "Bob", email: "bob@example.com" }
 ];
 
-interface RouteParams {
-  params: { id: string };
-}
-
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
   try {
     const userId = parseInt(params.id);
     
     if (isNaN(userId)) {
-      return ApiResponse.badRequest('Invalid user ID');
+      return sendBadRequest("Invalid user ID");
     }
-
+    
     const user = users.find(u => u.id === userId);
     
     if (!user) {
-      return ApiResponse.notFound('User');
+      return sendNotFound("User not found");
     }
-
-    return ApiResponse.success('User retrieved successfully', user);
-  } catch (error) {
-    console.error('Error fetching user:', error);
-    return ApiResponse.error('Internal server error', 500);
+    
+    return sendSuccess(user, "User fetched successfully");
+  } catch (err) {
+    return sendInternalError("Failed to fetch user", err);
   }
 }
 
-export async function PUT(request: NextRequest, { params }: RouteParams) {
+export async function PUT(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
   try {
     const userId = parseInt(params.id);
+    const updates = await req.json();
     
     if (isNaN(userId)) {
-      return ApiResponse.badRequest('Invalid user ID');
+      return sendBadRequest("Invalid user ID");
     }
-
+    
     const userIndex = users.findIndex(u => u.id === userId);
     
     if (userIndex === -1) {
-      return ApiResponse.notFound('User');
+      return sendNotFound("User not found");
     }
-
-    const body = await request.json();
     
     // Validation
-    if (!body.name || !body.email) {
-      return ApiResponse.badRequest('Name and email are required');
+    if (updates.email && !updates.email.includes('@')) {
+      return sendBadRequest("Invalid email format");
     }
-
+    
     // Update user
-    users[userIndex] = { ...users[userIndex], ...body };
-
-    return ApiResponse.success('User updated successfully', users[userIndex]);
-  } catch (error) {
-    console.error('Error updating user:', error);
-    return ApiResponse.error('Internal server error', 500);
-  }
-}
-
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
-  try {
-    const userId = parseInt(params.id);
+    users[userIndex] = { ...users[userIndex], ...updates };
     
-    if (isNaN(userId)) {
-      return ApiResponse.badRequest('Invalid user ID');
-    }
-
-    const userIndex = users.findIndex(u => u.id === userId);
-    
-    if (userIndex === -1) {
-      return ApiResponse.notFound('User');
-    }
-
-    // Remove user
-    const deletedUser = users.splice(userIndex, 1)[0];
-
-    return ApiResponse.success('User deleted successfully', deletedUser);
-  } catch (error) {
-    console.error('Error deleting user:', error);
-    return ApiResponse.error('Internal server error', 500);
+    return sendSuccess(users[userIndex], "User updated successfully");
+  } catch (err) {
+    return sendInternalError("Failed to update user", err);
   }
 }
