@@ -4,7 +4,7 @@ import React from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import FormInput from "@/src/components/FormInput";
+import FormInput from "@/components/FormInput";
 
 // Zod schema
 const signupSchema = z.object({

@@ -1,15 +1,21 @@
+import { fileURLToPath } from "url";
+import path from "path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
+  // Updated for Next.js 16
+  serverExternalPackages: ["bcrypt"],
+
   eslint: {
     ignoreDuringBuilds: true,
   },
-  typescript: {
-    ignoreBuildErrors: true,
+
+  turbopack: {
+    root: __dirname, // ESM-safe root
   },
-  experimental: {
-    serverComponentsExternalPackages: ['bcryptjs'],
-  },    
 };
 
-module.exports = nextConfig;
+export default nextConfig;
