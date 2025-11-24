@@ -62,17 +62,13 @@ model TripUser {
   role      UserRole @default(USER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
+  
   trips     Trip[]
   bookings  Booking[]
   reviews   Review[]
-
-  // <-- add this relation so BusTicket can point back to TripUser
-  busTickets BusTicket[]
-
+  
   @@map("trip_users")
 }
-
 
 model Trip {
   id          Int       @id @default(autoincrement())
@@ -154,7 +150,7 @@ model TripCategory {
   
   @@unique([tripId, categoryId])
   @@map("trip_categories")
-}
+}`
 
 enum UserRole {
   USER
