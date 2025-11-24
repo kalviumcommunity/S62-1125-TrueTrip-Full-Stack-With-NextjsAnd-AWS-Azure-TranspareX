@@ -46,10 +46,7 @@ export class InternalServerError extends AppError {
   }
 }
 
-<<<<<<< HEAD
-// Error handler middleware for API routes
-=======
->>>>>>> main
+
 export const withErrorHandler = (handler: Function) => {
   return async (req: Request, ...args: any[]) => {
     try {
@@ -71,10 +68,7 @@ export const withErrorHandler = (handler: Function) => {
         );
       }
 
-<<<<<<< HEAD
-      // Handle unknown errors
-=======
->>>>>>> main
+
       return new Response(
         JSON.stringify({
           success: false,
