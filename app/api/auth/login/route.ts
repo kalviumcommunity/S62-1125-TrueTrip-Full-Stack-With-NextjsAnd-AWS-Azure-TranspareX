@@ -1,54 +1,67 @@
 import { NextRequest } from 'next/server';
 import bcrypt from 'bcryptjs';
-import { AuthValidations } from '@/lib/utils/validations/auth';
-import { ApiResponseHandler } from '@/lib/utils/validations/api-response';
-import { JWTUtils } from '@/lib/utils/jwt';
-import { db, toSafeUser } from '@/lib/utils/prisma';
-import { Logger } from '@/lib/utils/logger';
-import { withErrorHandler, AuthenticationError } from '@/lib/utils/errorHandler';
+import { AuthValidations } from '../../../../lib/utils/validations/auth';
+import { ApiResponseHandler } from '../../../../lib/utils/validations/api-response';
+import { JWTUtils } from '../../../../lib/utils/jwt';
+import { db, toSafeUser } from '../../../../lib/utils/prisma';
+import { Logger } from '../../../../lib/utils/logger';
+import { withErrorHandler, UnauthorizedError } from '../../../../lib/utils/errorHandler';
 
 export const POST = withErrorHandler(async (req: NextRequest) => {
-  const body = await req.json();
+  try {
+    const body = await req.json();
+    
+    // Validate input using AuthValidations
+    const validatedData = AuthValidations.validateLogin(body);
+    const sanitizedData = AuthValidations.sanitizeUserInput(validatedData);
 
-  // Validate input
-  const validatedData = AuthValidations.validateLogin(body);
+    // Find user by email or username
+    const user = await db.user.findByEmail(sanitizedData.email) || 
+                  await db.user.findByUsername(sanitizedData.email);
 
-  // Find user with password
-  const user = await db.user.findByEmail(validatedData.email);
+    if (!user) {
+      throw new UnauthorizedError('Invalid credentials');
+    }
 
-  if (!user) {
-    throw new AuthenticationError('Invalid email or password');
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(sanitizedData.password, user.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedError('Invalid credentials');
+    }
+
+    // Generate token
+    const token = JWTUtils.generateToken({
+      userId: user.id.toString(),
+      email: user.email,
+      username: user.username,
+      role: user.role,
+    });
+
+    // Log the login
+    Logger.audit('user_login', user.id.toString(), { email: user.email });
+
+    // Convert to safe user without password
+    const safeUser = toSafeUser(user);
+
+    return ApiResponseHandler.success('Login successful', {
+      user: safeUser,
+      token,
+    });
+  } catch (error: any) {
+    console.error('Login error details:', error);
+    
+    // Handle Zod validation errors
+    if (error.errors) {
+      return ApiResponseHandler.error(
+        'Validation failed', 
+        400, 
+        { validationErrors: error.errors }
+      );
+    }
+    
+    return ApiResponseHandler.error(
+      error.message || 'Internal server error', 
+      error.statusCode || 500
+    );
   }
-
-  // Verify password
-  const isPasswordValid = await bcrypt.compare(
-    validatedData.password,
-    user.password
-  );
-
-  if (!isPasswordValid) {
-    throw new AuthenticationError('Invalid email or password');
-  }
-
-  // Generate token (convert userId to string for JWT)
-  const token = JWTUtils.generateToken({
-    userId: user.id.toString(), // Convert number to string for JWT
-    email: user.email,
-    username: user.username,
-    role: user.role,
-  });
-
-  // Update last login
-  await db.user.updateLastLogin(user.id);
-
-  // Log the login
-  Logger.audit('user_login', user.id.toString(), { email: user.email });
-
-  // Convert to safe user without password
-  const safeUser = toSafeUser(user);
-
-  return ApiResponseHandler.success('Login successful', {
-    user: safeUser,
-    token,
-  });
 });
