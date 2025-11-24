@@ -2,26 +2,26 @@
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 
-export default function LoginPage() {
+export default function Login() {
   const router = useRouter();
 
-  const handleLogin = () => {
-    // Later we will use a real backend endpoint
-    Cookies.set("token", "mock.jwt.token");
+  function handleLogin() {
+    // Mock token generation (in real apps, get it from backend)
+    const mockToken = "mock.jwt.token.here";
+    Cookies.set("token", mockToken, { expires: 1 }); // Expires in 1 day
     router.push("/dashboard");
-  };
+  }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen">
-      <h1 className="text-2xl mb-4">Login</h1>
-      <form className="flex flex-col gap-2 w-80">
-        <input type="email" placeholder="Email" className="border p-2"/>
-        <input type="password" placeholder="Password" className="border p-2"/>
-        <button className="bg-blue-500 text-white p-2 mt-2">Login</button>
-      </form>
-      <p className="mt-2">
-        Don’t have an account? <a href="/signup" className="text-blue-500">Signup</a>
-      </p>
-    </div>
+    <main className="flex flex-col items-center mt-10">
+      <h1 className="text-2xl font-bold mb-4">Login Page</h1>
+      <p className="text-gray-600 mb-6">Click the button to simulate login</p>
+      <button
+        onClick={handleLogin}
+        className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+      >
+        Login
+      </button>
+    </main>
   );
 }
