@@ -1,13 +1,13 @@
 export class Logger {
-  static info(message: string, meta?: any) {
+  static info(message: string, meta?: any, p0?: { email: string | null; role: string | null; }) {
     console.log(`[INFO] ${new Date().toISOString()}: ${message}`, meta || '');
   }
 
-  static error(message: string, error?: any) {
+  static error(message: string, error?: any, p0?: { error: any; }) {
     console.error(`[ERROR] ${new Date().toISOString()}: ${message}`, error || '');
   }
 
-  static warn(message: string, meta?: any) {
+  static warn(message: string, meta?: any, p0?: { path: string; attemptedRole: string; requiredRole: string; }) {
     console.warn(`[WARN] ${new Date().toISOString()}: ${message}`, meta || '');
   }
 

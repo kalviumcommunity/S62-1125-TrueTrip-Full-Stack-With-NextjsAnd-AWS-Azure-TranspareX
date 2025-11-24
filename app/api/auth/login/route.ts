@@ -5,41 +5,36 @@ import { ApiResponseHandler } from '@/lib/utils/validations/api-response';
 import { JWTUtils } from '@/lib/utils/jwt';
 import { db, toSafeUser } from '@/lib/utils/prisma';
 import { Logger } from '@/lib/utils/logger';
-import { withErrorHandler, AuthenticationError } from '@/lib/utils/errorHandler';
+import { withErrorHandler, UnauthorizedError } from '@/lib/utils/errorHandler';
 
 export const POST = withErrorHandler(async (req: NextRequest) => {
   const body = await req.json();
-
+  
   // Validate input
   const validatedData = AuthValidations.validateLogin(body);
+  const sanitizedData = AuthValidations.sanitizeUserInput(validatedData);
 
-  // Find user with password
-  const user = await db.user.findByEmail(validatedData.email);
+  // Find user by email or username
+  const user = await db.user.findByEmail(sanitizedData.email) || 
+                await db.user.findByUsername(sanitizedData.email);
 
   if (!user) {
-    throw new AuthenticationError('Invalid email or password');
+    throw new UnauthorizedError('Invalid credentials');
   }
 
   // Verify password
-  const isPasswordValid = await bcrypt.compare(
-    validatedData.password,
-    user.password
-  );
-
+  const isPasswordValid = await bcrypt.compare(sanitizedData.password, user.password);
   if (!isPasswordValid) {
-    throw new AuthenticationError('Invalid email or password');
+    throw new UnauthorizedError('Invalid credentials');
   }
 
-  // Generate token (convert userId to string for JWT)
+  // Generate token
   const token = JWTUtils.generateToken({
-    userId: user.id.toString(), // Convert number to string for JWT
+    userId: user.id.toString(),
     email: user.email,
     username: user.username,
     role: user.role,
   });
-
-  // Update last login
-  await db.user.updateLastLogin(user.id);
 
   // Log the login
   Logger.audit('user_login', user.id.toString(), { email: user.email });

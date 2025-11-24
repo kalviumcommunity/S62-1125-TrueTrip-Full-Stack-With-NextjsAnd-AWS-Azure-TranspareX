@@ -57,6 +57,40 @@ export const db = {
       });
     },
 
+    // ADD THIS METHOD - Find all users
+    async findAll(): Promise<SafeTripUser[]> {
+      return prisma.tripUser.findMany({
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          username: true,
+          email: true,
+          role: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+    },
+
+    // ADD THIS METHOD - Find many users (alias for findAll)
+    async findMany(): Promise<SafeTripUser[]> {
+      return prisma.tripUser.findMany({
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          username: true,
+          email: true,
+          role: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+    },
+
     async updateLastLogin(id: number): Promise<TripUser> {
       return prisma.tripUser.update({
         where: { id },

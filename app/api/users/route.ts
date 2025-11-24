@@ -1,59 +1,32 @@
-// app/api/users/route.ts
-import { 
-  sendSuccess, 
-  sendCreated, 
-  sendBadRequest, 
-  sendNotFound, 
-  sendInternalError 
-} from "@/lib/responseHandler";
+import { NextRequest } from 'next/server';
+import { ApiResponseHandler } from '@/lib/utils/validations/api-response';
+import { withErrorHandler } from '@/lib/utils/errorHandler';
+import { db, toSafeUser } from '@/lib/utils/prisma';
 
-// Mock database
-let users = [
-  { id: 1, name: "Alice", email: "alice@example.com" },
-  { id: 2, name: "Bob", email: "bob@example.com" }
-];
+export const GET = withErrorHandler(async (req: NextRequest) => {
+  const userRole = req.headers.get('x-user-role');
+  const userEmail = req.headers.get('x-user-email');
+  const userId = req.headers.get('x-user-id');
 
-export async function GET() {
-  try {
-    // Simulate database fetch
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    return sendSuccess(users, "Users fetched successfully");
-  } catch (err) {
-    return sendInternalError("Failed to fetch users", err);
-  }
-}
+  console.log('User route accessed by:', { userId, userEmail, userRole });
 
-export async function POST(req: Request) {
-  try {
-    const data = await req.json();
-    
-    // Validation
-    if (!data.name || !data.email) {
-      return sendBadRequest("Missing required fields: name and email are required");
-    }
-    
-    if (!data.email.includes('@')) {
-      return sendBadRequest("Invalid email format", { field: "email" });
-    }
-    
-    // Check if user already exists
-    const existingUser = users.find(user => user.email === data.email);
-    if (existingUser) {
-      return sendBadRequest("User with this email already exists");
-    }
-    
-    // Create new user
-    const newUser = {
-      id: users.length + 1,
-      name: data.name,
-      email: data.email
-    };
-    
-    users.push(newUser);
-    
-    return sendCreated(newUser, "User created successfully");
-  } catch (err) {
-    return sendInternalError("Failed to create user", err);
-  }
-}
+  // Get all users from database using the correct method
+  const users = await db.user.findAll();
+  
+  // Convert to safe users without sensitive data (skip conversion if already safe)
+  const safeUsers = users.map((user: any) =>
+    // call toSafeUser only when the raw user contains a password; otherwise assume it's already safe
+    'password' in user ? toSafeUser(user as any) : user
+  );
+
+  return ApiResponseHandler.success('Users retrieved successfully', {
+    currentUser: { 
+      id: userId, 
+      email: userEmail, 
+      role: userRole 
+    },
+    users: safeUsers,
+    total: safeUsers.length,
+    timestamp: new Date().toISOString()
+  });
+});
