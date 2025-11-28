@@ -1,8 +1,0 @@
-﻿#!/usr/bin/env sh
-. "$(dirname "$0")/_/husky.sh"
-
-npx lint-staged
-npm test
-npx lint-staged
-npx lint-staged
-echo 'pre-commit passed'

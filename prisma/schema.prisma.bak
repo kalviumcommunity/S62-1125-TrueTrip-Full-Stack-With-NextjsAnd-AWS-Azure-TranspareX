@@ -1,3 +1,4 @@
+// prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
 }
@@ -61,17 +62,13 @@ model TripUser {
   role      UserRole @default(USER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
+  
   trips     Trip[]
   bookings  Booking[]
   reviews   Review[]
-
-  // <-- add this relation so BusTicket can point back to TripUser
-  busTickets BusTicket[]
-
+  
   @@map("trip_users")
 }
-
 
 model Trip {
   id          Int       @id @default(autoincrement())
@@ -153,14 +150,21 @@ model TripCategory {
   
   @@unique([tripId, categoryId])
   @@map("trip_categories")
-
-}
+}`
 
 enum UserRole {
   USER
   ADMIN
   GUIDE
 }
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
 
 model Bus {
   id          String     @id @default(uuid())
@@ -197,21 +201,9 @@ model BusTicket {
   userId      Int
   routeId     String
 
+  // Relations
   user  TripUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
   route BusRoute  @relation(fields: [routeId], references: [id], onDelete: Cascade)
-}
-
-enum UserRole {
-  USER
-  ADMIN
-  GUIDE
-}
-
-enum BookingStatus {
-  PENDING
-  CONFIRMED
-  CANCELLED
-  COMPLETED
 }
 
 enum TicketStatus {
