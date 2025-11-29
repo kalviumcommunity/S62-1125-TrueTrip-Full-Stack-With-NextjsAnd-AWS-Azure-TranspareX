@@ -1,15 +1,10 @@
-/** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Remove 'serverExternalPackages' and 'turbopack' if they're causing issues
   experimental: {
-    // Add any experimental features you need here
+    optimizeCss: true,    // tailwind v4
+    turbo: {
+      enabled: false,     // ❌ disable turbopack
+    },
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    ignoreBuildErrors: true,
-  }
 };
 
 export default nextConfig;
