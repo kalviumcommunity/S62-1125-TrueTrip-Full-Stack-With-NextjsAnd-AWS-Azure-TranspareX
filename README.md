@@ -512,3 +512,86 @@ Environment-specific security configurations maintain flexibility. Secret manage
 
 This implementation delivers enterprise-grade authorization capabilities while maintaining developer-friendly integration patterns and comprehensive security coverage across all protected application routes.
 
+State Management using Context & Hooks
+Project Overview
+Implementation of global state management in Next.js using React Context API and custom hooks. This system provides centralized state management for authentication and UI themes, enabling efficient data sharing across components without prop-drilling.
+
+Architecture and Implementation
+Folder Structure
+The project follows an organized structure with clear separation of concerns. The context directory contains all global state management logic, while hooks provide clean interfaces for component consumption. The app directory contains the main application layout and pages.
+
+Core Context Implementations
+AuthContext
+The AuthContext manages global authentication state including user login status and user information. It provides user state management with TypeScript interfaces for type safety. The implementation includes login and logout functionality with proper console logging for debugging purposes. The context is type-safe with comprehensive error handling to ensure robust usage.
+
+UIContext
+The UIContext handles global UI state including theme management and sidebar visibility. It supports theme toggling between light and dark modes with consistent state updates across all components. The context manages sidebar open and close state with reliable state synchronization.
+
+Custom Hooks Abstraction
+useAuth Hook
+The useAuth hook provides a clean interface for authentication operations. It abstracts the context consumption logic away from components and provides computed properties like isAuthenticated for easier usage. This hook significantly simplifies component code by handling all authentication-related logic.
+
+useUI Hook
+The useUI hook offers streamlined access to UI state and operations. It centralizes all UI state logic and provides easy integration with components. The hook maintains proper separation of concerns while offering a simple API for component consumption.
+
+Usage Examples
+Provider Setup
+The root layout wraps the entire application with both context providers. This setup makes the authentication and UI state globally available throughout the component tree. The providers are composed properly to ensure correct hierarchy and functionality.
+
+Component Implementation
+Components consume the state using the custom hooks, which provide a clean and intuitive API. The implementation demonstrates proper state access and mutation patterns. Components can easily trigger state updates like login, logout, theme toggling, and sidebar management.
+
+State Flow and Behavior
+Authentication Flow
+The authentication starts with an initial state of no user. Login actions update the user state and provide console feedback. Logout actions reset the user state and clear authentication. All actions include proper console logging for development and debugging purposes.
+
+UI State Flow
+Theme toggling switches between light and dark modes with immediate visual feedback. Sidebar toggling manages the open and close state with smooth transitions. All UI state changes provide real-time updates across the application.
+
+Performance Considerations
+Optimization Strategies
+The implementation considers performance through proper React memoization techniques. The architecture supports future enhancement with useReducer for complex state transitions. Contexts are split by domain to minimize unnecessary re-renders.
+
+Current Performance Characteristics
+The solution uses lightweight state objects to minimize memory footprint. State updates are optimized to reduce re-render impact. The overall implementation maintains efficient performance characteristics.
+
+Debugging and Development
+Development Tools Integration
+The implementation works seamlessly with React DevTools for state inspection. Developers can monitor context values and state changes in real-time. The setup supports effective debugging of component re-renders.
+
+Development Experience
+TypeScript provides comprehensive type safety and autocomplete features. Custom hooks offer clean and intuitive APIs for component development. Consistent error handling ensures reliable development experience.
+
+Scalability and Maintainability
+Code Organization Benefits
+The architecture provides clear separation of concerns between state logic and UI components. Custom hooks offer excellent reusability across the entire application. Centralized state management significantly simplifies maintenance and updates.
+
+Extension Capabilities
+The system easily supports adding new contexts for additional state needs. Existing contexts can be extended with new functionality without breaking changes. New components can integrate seamlessly with the state management system.
+
+Error Handling
+Context Safety
+Custom hooks include proper error boundaries for missing provider scenarios. TypeScript interfaces prevent incorrect usage at compile time. Runtime validation ensures safe context consumption.
+
+Developer Experience
+Clear error messages guide developers when contexts are misconfigured. Type-safe context consumption prevents common programming errors. Intuitive hook interfaces reduce learning curve and improve productivity.
+
+Reflection and Learnings
+Implementation Benefits
+The solution eliminates prop-drilling, resulting in cleaner component hierarchies. The intuitive hooks abstraction significantly simplifies state consumption. Centralized state logic makes updates and debugging more efficient. TypeScript integration prevents runtime errors and improves development experience.
+
+Performance Insights
+The Context plus Hooks pattern provides excellent performance for medium-sized applications. Strategic context splitting prevents unnecessary re-renders. The custom hooks abstraction adds minimal overhead while providing significant benefits.
+
+Scalability Considerations
+The current implementation scales well for authentication and UI state management. For larger applications, state normalization could provide additional benefits. The architecture supports potential integration with more complex state management solutions.
+
+Production Readiness
+Robust error handling ensures graceful failure scenarios. Comprehensive type safety reduces runtime errors significantly. The performance characteristics are suitable for production environments. The system easily extends to accommodate additional global state requirements.
+
+Key Takeaways
+Maintainable State Architecture
+The Context plus Hooks combination provides centralized logic management without code duplication. Components remain lightweight with business logic properly separated from presentation logic. The implementation maintains minimal re-renders through optimized patterns.
+
+Best Practices Demonstrated
+The implementation shows type-safe context creation with proper interfaces. Custom hooks provide clean consumption patterns that improve code quality. Provider composition at the root level ensures proper context availability. Consistent error handling and validation create a robust solution. Performance-conscious implementation techniques ensure efficient operation.

@@ -1,11 +1,16 @@
+import { AuthProvider } from "@/context/AuthContext";
+import { UIProvider } from "@/context/UIContext";
 import "./globals.css";
+
 import Image from "next/image";
 import Link from "next/link";
+=======
 
 export const metadata = {
-  title: "TrueTrip",
-  description: "Transparent Bus & Trip Management",
+  title: "TrueTrip - Travel Supply Chain",
+  description: "Transparent and efficient travel supply-chain system",
 };
+
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -34,6 +39,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         {/* Main content */}
         <main className="max-w-5xl mx-auto p-8">{children}</main>
+=======
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en">
+      <body>
+        <AuthProvider>
+          <UIProvider>
+            {children}
+          </UIProvider>
+        </AuthProvider>
       </body>
     </html>
   );
