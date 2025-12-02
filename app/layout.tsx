@@ -1,59 +1,27 @@
-import { AuthProvider } from "@/context/AuthContext";
-import { UIProvider } from "@/context/UIContext";
-import "./globals.css";
+// layout.tsx
+// Place this file in the /app directory (Next.js app router). It wraps pages with global layout, fonts, and Tailwind container.
 
-import Image from "next/image";
-import Link from "next/link";
-=======
+import './globals.css'
+import React from 'react'
+import type { Metadata } from 'next'
 
-export const metadata = {
-  title: "TrueTrip - Travel Supply Chain",
-  description: "Transparent and efficient travel supply-chain system",
-};
-
+export const metadata: Metadata = {
+  title: 'TrueTrip — Transparency in Bus Refunds',
+  description: 'Know your rights, track refunds, and travel with confidence.',
+}
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="bg-gray-50 min-h-screen">
-        {/* Header / Navbar */}
-        <header className="bg-white shadow-md">
-          <div className="max-w-5xl mx-auto flex items-center justify-between p-4">
-            {/* Logo + Name */}
-            <Link href="/" className="flex items-center gap-3">
-              <Image src="/logo.png" alt="TrueTrip Logo" width={50} height={50} />
-              <span className="text-2xl font-bold text-gray-900">TrueTrip</span>
-            </Link>
+      <head />
+      <body className="antialiased text-slate-800 bg-gradient-to-br from-pink-50 via-purple-50 to-slate-50">
+        <div className="min-h-screen">
+          {/* top background glow */}
+          <div className="fixed inset-0 pointer-events-none -z-10 bg-gradient-to-br from-pink-50 via-purple-50 to-slate-50" />
 
-            {/* Example Nav Links */}
-            <nav className="flex gap-4">
-              <Link href="/dashboard" className="text-gray-700 hover:text-blue-600 transition">
-                Dashboard
-              </Link>
-              <Link href="/about" className="text-gray-700 hover:text-blue-600 transition">
-                About
-              </Link>
-            </nav>
-          </div>
-        </header>
-
-        {/* Main content */}
-        <main className="max-w-5xl mx-auto p-8">{children}</main>
-=======
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <html lang="en">
-      <body>
-        <AuthProvider>
-          <UIProvider>
-            {children}
-          </UIProvider>
-        </AuthProvider>
+          <div className="max-w-7xl mx-auto">{children}</div>
+        </div>
       </body>
     </html>
-  );
+  )
 }
