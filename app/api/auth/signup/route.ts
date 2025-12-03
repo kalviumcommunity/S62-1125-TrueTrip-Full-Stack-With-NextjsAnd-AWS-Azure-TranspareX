@@ -1,71 +1,63 @@
-import { NextRequest } from 'next/server';
-import bcrypt from 'bcryptjs';
-import { ApiResponseHandler } from '@/lib/utils/validations/api-response';
-import { JWTUtils } from '@/lib/utils/jwt';
-import { db, toSafeUser } from '@/lib/utils/prisma';
-import { Logger } from '@/lib/utils/logger';
-import { withErrorHandler, ConflictError } from '@/lib/utils/errorHandler';
+// app/api/auth/signup/route.ts
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { hashPassword, signAuthToken } from "@/lib/auth";
 
-export const POST = withErrorHandler(async (req: NextRequest) => {
+const COOKIE_NAME = "truetrip_token";
+
+export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    console.log('Signup request received:', body);
-    
-    // Basic validation
-    const { firstName, lastName, username, email, password } = body;
-    
-    if (!firstName || !lastName || !username || !email || !password) {
-      return ApiResponseHandler.error('All fields are required', 400);
+    const { name, email, password } = await req.json();
+
+    if (!name || !email || !password) {
+      return NextResponse.json(
+        { error: "Name, email and password are required" },
+        { status: 400 }
+      );
     }
 
-    // Check if user already exists by email
-    const existingUserByEmail = await db.user.findByEmail(email);
-    if (existingUserByEmail) {
-      throw new ConflictError('User with this email already exists');
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      return NextResponse.json(
+        { error: "User already exists" },
+        { status: 409 }
+      );
     }
 
-    // Check if user already exists by username
-    const existingUserByUsername = await db.user.findByUsername(username);
-    if (existingUserByUsername) {
-      throw new ConflictError('User with this username already exists');
-    }
+    const hashed = await hashPassword(password);
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 12);
-
-    // Create user using TripUser model
-    const user = await db.user.create({
-      firstName: firstName,
-      lastName: lastName,
-      username: username,
-      email: email,
-      password: hashedPassword,
-      role: 'USER', // Make sure this matches your UserRole enum
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashed,
+      },
     });
 
-    // Generate token
-    const token = JWTUtils.generateToken({
-      userId: user.id.toString(),
-      email: user.email,
-      username: user.username,
-      role: user.role,
+    const token = signAuthToken({ userId: user.id });
+
+    const res = NextResponse.json(
+      {
+        message: "Signup successful",
+        user: { id: user.id, email: user.email, name: user.name },
+      },
+      { status: 201 }
+    );
+
+    res.cookies.set(COOKIE_NAME, token, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 7 * 24 * 60 * 60,
     });
 
-    // Log the signup
-    Logger.audit('user_signup', user.id.toString(), { email: user.email });
-
-    // Convert to safe user without password
-    const safeUser = toSafeUser(user);
-
-    return ApiResponseHandler.created('User created successfully', {
-      user: safeUser,
-      token,
-    });
-  } catch (error: any) {
-    console.error('Signup error details:', error);
-    return ApiResponseHandler.error(
-      error.message || 'Internal server error', 
-      error.statusCode || 500
+    return res;
+  } catch (err) {
+    console.error("Signup API error:", err);
+    return NextResponse.json(
+      { error: "Something went wrong" },
+      { status: 500 }
     );
   }
-});
+}

@@ -18,18 +18,16 @@
     "db:studio": "prisma studio",
     "db:seed": "node prisma/seed-clean.js",
     "db:migrate": "prisma migrate dev",
-    "seed": "ts-node prisma/seed.ts",
     "db:reset": "prisma migrate reset"
   },
   "prisma": {
     "prisma:generate": "npx prisma generate",
     "prisma:migrate": "npx prisma migrate dev --name init_schema",
-    "prisma:studio": "npx prisma studio",
-    "seed": "ts-node --transpile-only prisma/seed.ts"
+    "prisma:studio": "npx prisma studio"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
-    "@prisma/client": "^5.6.0",
+    "@prisma/client": "^5.22.0",
     "@types/js-cookie": "^3.0.6",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^3.0.3",
@@ -64,7 +62,7 @@
     "lint-staged": "^15.5.2",
     "postcss": "^8.5.6",
     "prettier": "^3.6.2",
-    "prisma": "^5.6.0",
+    "prisma": "^5.22.0",
     "tailwindcss": "^4.1.17",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
