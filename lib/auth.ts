@@ -1,53 +1,43 @@
+// lib/auth.ts
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { compare, hash } from "bcryptjs";
+import { cookies } from "next/headers";
+import { prisma } from "./prisma";
 
-export interface JWTPayload {
-  userId: string;
-  email: string;
-  role: string;
+const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change-me";
+const COOKIE_NAME = "truetrip_token";
+
+// password helpers
+export async function hashPassword(password: string) {
+  const salt = await bcrypt.genSalt(10);
+  return bcrypt.hash(password, salt);
 }
 
-export class AuthService {
-  private static JWT_SECRET = process.env.JWT_SECRET || "your-fallback-secret-change-in-production";
-
-  static async hashPassword(password: string): Promise<string> {
-    return hash(password, 12);
-  }
-
-  static async verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
-    return compare(password, hashedPassword);
-  }
-
-  static generateToken(payload: JWTPayload): string {
-    return jwt.sign(payload, this.JWT_SECRET, { expiresIn: "7d" });
-  }
-
-  static verifyToken(token: string): JWTPayload {
-    try {
-      return jwt.verify(token, this.JWT_SECRET) as JWTPayload;
-    } catch {
-      throw new Error("Invalid or expired token");
-    }
-  }
-
-  static getUserIdFromRequest(request: Request): number {
-    const authHeader = request.headers.get("authorization");
-    
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      throw new Error("Authentication required");
-    }
-
-    const token = authHeader.substring(7);
-    const payload = this.verifyToken(token);
-    
-    return parseInt(payload.userId);
-  }
+export async function verifyPassword(password: string, hash: string) {
+  return bcrypt.compare(password, hash);
 }
 
-export function requireRole(requiredRole: string, userRole: string) {
-  const roleHierarchy = ["USER", "GUIDE", "ADMIN"];
-  
-  if (roleHierarchy.indexOf(userRole) < roleHierarchy.indexOf(requiredRole)) {
-    throw new Error("Insufficient permissions");
+// JWT helpers
+export function signAuthToken(payload: object) {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
+}
+
+export function verifyAuthToken(token: string) {
+  return jwt.verify(token, JWT_SECRET) as { userId: string };
+}
+
+// read current user from cookie (for server components)
+export async function getCurrentUser() {
+  const token = cookies().get(COOKIE_NAME)?.value;
+  if (!token) return null;
+
+  try {
+    const decoded = verifyAuthToken(token);
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+    });
+    return user;
+  } catch {
+    return null;
   }
 }

@@ -1,51 +1,61 @@
-import { NextRequest } from "next/server";
-import { prisma } from "../../../../lib/prisma";
-import { loginSchema } from "../../../../lib/validation";
-import { handleError, AuthenticationError } from "../../../../lib/errorHandler";
-import { ResponseHandler } from "../../../../lib/responseHandler";
-import { AuthService } from "../../../../lib/auth";
+// app/api/auth/login/route.ts
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { verifyPassword, signAuthToken } from "@/lib/auth";
 
-export async function POST(request: NextRequest) {
+const COOKIE_NAME = "truetrip_token";
+
+export async function POST(req: Request) {
   try {
-    const body = await request.json();
-    
-    const validatedData = loginSchema.parse(body);
+    const { email, password } = await req.json();
 
-    // Find user
-    const user = await prisma.tripUser.findUnique({
-      where: { email: validatedData.email },
-    });
+    if (!email || !password) {
+      return NextResponse.json(
+        { error: "Email and password are required" },
+        { status: 400 }
+      );
+    }
 
+    const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
-      throw new AuthenticationError("Invalid credentials");
+      return NextResponse.json(
+        { error: "Invalid email or password" },
+        { status: 401 }
+      );
     }
 
-    // Verify password
-    const isValidPassword = await AuthService.verifyPassword(validatedData.password, user.password);
-
-    if (!isValidPassword) {
-      throw new AuthenticationError("Invalid credentials");
+    const valid = await verifyPassword(password, user.password);
+    if (!valid) {
+      return NextResponse.json(
+        { error: "Invalid email or password" },
+        { status: 401 }
+      );
     }
 
-    // Generate token
-    const token = AuthService.generateToken({
-      userId: user.id.toString(),
-      email: user.email,
-      role: user.role,
-    });
+    const token = signAuthToken({ userId: user.id });
 
-    return ResponseHandler.sendSuccess("Login successful", {
-      user: {
-        id: user.id,
-        email: user.email,
-        username: user.username,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role,
+    const res = NextResponse.json(
+      {
+        message: "Login successful",
+        user: { id: user.id, email: user.email },
       },
-      token,
+      { status: 200 }
+    );
+
+    res.cookies.set(COOKIE_NAME, token, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 7 * 24 * 60 * 60,
     });
-  } catch (error) {
-    return handleError(error);
+
+    return res;
+  } catch (err) {
+    console.error("Login API error:", err);
+    return NextResponse.json(
+      { error: "Something went wrong" },
+      { status: 500 }
+    );
   }
 }
