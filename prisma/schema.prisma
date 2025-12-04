@@ -5,10 +5,11 @@ generator client {
 }
 
 datasource db {
-  // for now we use sqlite locally; later you can switch provider + url to postgres + Supabase
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
+
 
 // NO enums anymore
 
@@ -46,4 +47,7 @@ model Refund {
   status      String   @default("PENDING") // <- was RefundStatus
   createdAt   DateTime @default(now())
   processedAt DateTime?
+
+  estimatedAmount Int?      // 👈 NEW: what we think user will get
+  policyNote      String?   // 👈 NEW: how we calculated it (human text)
 }
