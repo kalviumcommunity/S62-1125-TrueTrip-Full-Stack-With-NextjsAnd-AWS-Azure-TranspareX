@@ -1,32 +1,39 @@
+// app/api/bookings/[id]/cancel/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { sendMail } from "@/lib/email";
 
-
-function calculateRefundEstimate(journeyDate: Date, amount: number) {
+// 🌸 NEW LOGIC: Time-Since-Booking (Accountability Model)
+function calculateRefundEstimate(bookingDate: Date, amount: number) {
   const now = new Date();
-  const diffMs = journeyDate.getTime() - now.getTime();
-  const diffHours = diffMs / (1000 * 60 * 60);
+  
+  // Calculate how long the user has held the ticket (in milliseconds)
+  const diffMs = now.getTime() - bookingDate.getTime();
+  
+  // Convert to weeks (Math.ceil ensures even 1 minute counts as "Week 1")
+  const weeksHeld = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24 * 7)));
 
-  let percentage = 0;
-  let note = "";
+  // Calculate percentage: 100% initially, drops by 10% each subsequent week
+  // Week 1 = 100 - 0 = 100%
+  // Week 2 = 100 - 10 = 90%
+  // Week 3 = 100 - 20 = 80%
+  let percentageRaw = 100 - (weeksHeld - 1) * 10;
 
-  if (diffHours > 24) {
-    percentage = 0.9;
-    note =
-      "Cancelled more than 24 hours before departure: ~90% refund as per policy.";
-  } else if (diffHours > 6) {
-    percentage = 0.7;
-    note =
-      "Cancelled 6–24 hours before departure: ~70% refund as per policy.";
-  } else {
-    percentage = 0;
-    note =
-      "Cancelled less than 6 hours before departure: no refund as per policy.";
-  }
+  // Safety clamps (cannot be negative)
+  if (percentageRaw < 0) percentageRaw = 0;
 
+  const percentage = percentageRaw / 100;
   const estimatedAmount = Math.round(amount * percentage);
+
+  let note = "";
+  if (percentage === 1) {
+    note = "Full refund: Cancelled within the first week of booking.";
+  } else if (percentage === 0) {
+    note = "No refund: Booking was held for too long.";
+  } else {
+    note = `${percentageRaw}% refund: Cancelled within ${weeksHeld} weeks of booking.`;
+  }
 
   return { estimatedAmount, note };
 }
@@ -35,7 +42,7 @@ interface Params {
   params: { id: string };
 }
 
-export async function POST(_req: Request, { params }: Params) {
+export async function POST(req: Request, { params }: Params) {
   try {
     const user = await getCurrentUser();
     if (!user) {
@@ -44,6 +51,7 @@ export async function POST(_req: Request, { params }: Params) {
 
     const bookingId = params.id;
 
+    // Fetch booking (createdAt is selected by default)
     const booking = await prisma.booking.findUnique({
       where: { id: bookingId },
       include: { refund: true },
@@ -69,9 +77,9 @@ export async function POST(_req: Request, { params }: Params) {
       );
     }
 
-    // 🌸 NEW: calculate estimated refund & explanation
+    // 🌸 NEW: Calculate estimate using Booking Date (createdAt)
     const { estimatedAmount, note } = calculateRefundEstimate(
-      booking.journeyDate,
+      booking.createdAt,
       booking.amount
     );
 
@@ -90,34 +98,35 @@ export async function POST(_req: Request, { params }: Params) {
         },
       }),
     ]);
+
     try {
-  await sendMail({
-    to: user.email,
-    subject: "Your refund request has been received 💸",
-    html: `
-      <h2>Refund request received</h2>
-      <p>Hi ${user.name || "there"},</p>
-      <p>Your trip from <b>${booking.fromCity}</b> to <b>${
-      booking.toCity
-    }</b> on
-      <b>${booking.journeyDate.toDateString()}</b> has been cancelled.</p>
-      ${
-        typeof refund.estimatedAmount === "number"
-          ? `<p>Estimated refund: <b>₹${refund.estimatedAmount}</b></p>`
-          : ""
-      }
-      ${
-        refund.policyNote
-          ? `<p style="color:#555;font-size:14px;">${refund.policyNote}</p>`
-          : ""
-      }
-      <p>You can track this refund anytime from your TrueTrip dashboard.</p>
-      <p style="margin-top:16px;">— TrueTrip</p>
-    `,
-  });
-} catch (e) {
-  console.error("Failed to send refund email", e);
-}
+      await sendMail({
+        to: user.email,
+        subject: "Your refund request has been received 💸",
+        html: `
+          <h2>Refund request received</h2>
+          <p>Hi ${user.name || "there"},</p>
+          <p>Your trip from <b>${booking.fromCity}</b> to <b>${
+          booking.toCity
+        }</b> on
+          <b>${booking.journeyDate.toDateString()}</b> has been cancelled.</p>
+          ${
+            typeof refund.estimatedAmount === "number"
+              ? `<p>Estimated refund: <b>₹${refund.estimatedAmount}</b></p>`
+              : ""
+          }
+          ${
+            refund.policyNote
+              ? `<p style="color:#555;font-size:14px;">Policy: ${refund.policyNote}</p>`
+              : ""
+          }
+          <p>You can track this refund anytime from your TrueTrip dashboard.</p>
+          <p style="margin-top:16px;">— TrueTrip</p>
+        `,
+      });
+    } catch (e) {
+      console.error("Failed to send refund email", e);
+    }
 
     return NextResponse.json({ booking: updatedBooking, refund });
   } catch (err) {
