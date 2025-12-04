@@ -109,8 +109,8 @@ export default function RootLayout({
                     </svg>
                     {/* Small dust effect behind the bus */}
                     <div className="absolute bottom-1 right-[-10px] space-x-1 flex opacity-50">
-                        <div className="w-1 h-1 bg-gray-400 rounded-full animate-ping"></div>
-                        <div className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-ping delay-75"></div>
+                        <div className="w-1 h-1 bg-white rounded-full animate-ping"></div>
+                        <div className="w-1.5 h-1.5 bg-white rounded-full animate-ping delay-75"></div>
                     </div>
                 </div>
             </div>
